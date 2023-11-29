@@ -30,6 +30,13 @@ class HostApiGenerator : public Generator {
   void Generate(float* dev_ptr, float mean, float stddev) override;
 };
 
+enum DeviceApiType {
+  XORWOW,
+  MRG32k3a,
+  Philox4,
+};
+
+template <int ApiType>
 class DeviceApiGenerator : public Generator {
  public:
   void Setup(std::size_t num) override;

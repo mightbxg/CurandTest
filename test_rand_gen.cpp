@@ -18,8 +18,14 @@ static void CheckMeanStd(const std::vector<float>& data, float mean, float stdde
     data_stddev += err * err;
   }
   data_stddev = std::sqrt(data_stddev / static_cast<float>(data.size()));
-  std::cout << "  mean: " << mean << " " << data_mean << " " << (data_mean - mean) << "\n"
-            << "stddev: " << stddev << " " << data_stddev << " " << (data_stddev - stddev) / stddev << "\n";
+  float mean_diff = data_mean - mean;
+  float stddev_diff = (data_stddev - stddev) / stddev;
+  if (std::abs(mean_diff) > 0.05) std::cout << "\33[33m";
+  if (std::abs(mean_diff) > 0.15) std::cout << "\33[31m";
+  std::cout << "  mean: " << mean << " " << data_mean << " " << mean_diff << "\n\33[0m";
+  if (std::abs(stddev_diff) > 0.02) std::cout << "\33[33m";
+  if (std::abs(stddev_diff) > 0.1) std::cout << "\33[31m";
+  std::cout << "stddev: " << stddev << " " << data_stddev << " " << stddev_diff << "\n\33[0m";
 }
 
 template <typename Generator>
@@ -38,7 +44,17 @@ static void Validate(std::size_t num, float mean, float stddev) {
 }
 
 int main(int argc, char** argv) {
-  Validate<cu::HostApiGenerator>(10000, 10.0f, 3.0f);
-  Validate<cu::DeviceApiGenerator>(10000, 10.0f, 3.0f);
+  std::vector<size_t> nums = {100, 1000, 10000};
+  std::vector<float> stddevs = {0.01, 1.0, 10.0};
+  float mean = 10.0f;
+  for (auto num : nums) {
+    for (auto stddev : stddevs) {
+      std::cout << "\33[35m---------------------num[" << num << "] mean[" << mean << "] std[" << stddev << "]\33[0m\n";
+      Validate<cu::HostApiGenerator>(num, mean, stddev);
+      Validate<cu::DeviceApiGenerator<cu::XORWOW>>(num, mean, stddev);
+      Validate<cu::DeviceApiGenerator<cu::MRG32k3a>>(num, mean, stddev);
+      Validate<cu::DeviceApiGenerator<cu::Philox4>>(num, mean, stddev);
+    }
+  }
   return 0;
 }

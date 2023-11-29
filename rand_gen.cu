@@ -94,39 +94,69 @@ void HostApiGenerator::Generate(float* dev_ptr, float mean, float stddev) {
   cudaStreamSynchronize(g_stream);
 }
 
-__global__ void SetupKernel(curandState* state, size_t num) {
+template <int ApiType>
+struct GetStateType {};
+
+template <>
+struct GetStateType<XORWOW> {
+  using type = curandState;
+};
+
+template <>
+struct GetStateType<MRG32k3a> {
+  using type = curandStateMRG32k3a;
+};
+
+template <>
+struct GetStateType<Philox4> {
+  using type = curandStatePhilox4_32_10_t;
+};
+
+template <int ApiType>
+__global__ void SetupKernel(typename GetStateType<ApiType>::type* state, size_t num) {
   unsigned id = threadIdx.x + blockIdx.x * blockDim.x;
   if (id >= num) return;
   curand_init(1234, 0, id, state + id);
 }
 
-/// @note num should be multiples of 2
-static curandState* g_dev_states;
-void DeviceApiGenerator::Setup(std::size_t num) {
+template <int ApiType>
+static typename GetStateType<ApiType>::type* g_dev_states;
+
+template <int ApiType>
+void DeviceApiGenerator<ApiType>::Setup(std::size_t num) {
   assert((num & 1) == 0);
   InitStream();
-  CUDA_CHECK(cudaMalloc((void**)&g_dev_states, num * sizeof(curandState)));
+  CUDA_CHECK(cudaMalloc((void**)&g_dev_states<ApiType>, num * sizeof(typename GetStateType<ApiType>::type)));
   const unsigned int thd_num = 512;
   const unsigned int blk_num = (num + thd_num - 1) / thd_num;
-  SetupKernel<<<blk_num, thd_num, 0, g_stream>>>(g_dev_states, num);
+  SetupKernel<ApiType><<<blk_num, thd_num, 0, g_stream>>>(g_dev_states<ApiType>, num);
   cudaStreamSynchronize(g_stream);
   num_ = num;
 }
 
-__global__ void GenerateNormalKernel(curandState* state, float mean, float stddev, size_t num, float* result) {
+template <typename StateType>
+__global__ void GenerateNormalKernel(StateType* state, float mean, float stddev, size_t num, float* result) {
   unsigned id = threadIdx.x + blockIdx.x * blockDim.x;
   if (id >= num) return;
   auto v = curand_normal(state + id);
   result[id] = v * stddev + mean;
 }
 
-void DeviceApiGenerator::Generate(float* dev_ptr, float mean, float stddev) {
+template <int ApiType>
+void DeviceApiGenerator<ApiType>::Generate(float* dev_ptr, float mean, float stddev) {
   const unsigned int thd_num = 512;
   const unsigned int blk_num = (num_ + thd_num - 1) / thd_num;
-  GenerateNormalKernel<<<blk_num, thd_num, 0, g_stream>>>(g_dev_states, mean, stddev, num_, dev_ptr);
+  GenerateNormalKernel<<<blk_num, thd_num, 0, g_stream>>>(g_dev_states<ApiType>, mean, stddev, num_, dev_ptr);
   cudaStreamSynchronize(g_stream);
 }
 
-void DeviceApiGenerator::Cleanup() { CUDA_CHECK(cudaFree(g_dev_states)); }
+template <int ApiType>
+void DeviceApiGenerator<ApiType>::Cleanup() {
+  CUDA_CHECK(cudaFree(g_dev_states<ApiType>));
+}
+
+template class DeviceApiGenerator<XORWOW>;
+template class DeviceApiGenerator<MRG32k3a>;
+template class DeviceApiGenerator<Philox4>;
 
 }  // namespace cu
