@@ -4,7 +4,7 @@ set(CMAKE_CUDA_ARCHITECTURES "75")
 set(CMAKE_CUDA_COMPILER "/usr/local/cuda/bin/nvcc")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
-project(CudaTest LANGUAGES CXX CUDA)
+project(CurandTest LANGUAGES CXX CUDA)
 
 find_package(benchmark REQUIRED)
 find_package(CUDAToolkit REQUIRED)
