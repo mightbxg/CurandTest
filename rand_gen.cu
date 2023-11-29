@@ -114,16 +114,15 @@ void DeviceApiGenerator::Setup(std::size_t num) {
 }
 
 __global__ void GenerateNormalKernel(curandState* state, float mean, float stddev, size_t num, float* result) {
-  unsigned id = threadIdx.x * 2 + blockIdx.x * blockDim.x;
+  unsigned id = threadIdx.x + blockIdx.x * blockDim.x;
   if (id >= num) return;
-  auto d = curand_normal2(state + id);
-  result[id] = d.x * stddev + mean;
-  result[id + 1] = d.y * stddev + mean;
+  auto v = curand_normal(state + id);
+  result[id] = v * stddev + mean;
 }
 
 void DeviceApiGenerator::Generate(float* dev_ptr, float mean, float stddev) {
   const unsigned int thd_num = 512;
-  const unsigned int blk_num = (num_ / 2 + thd_num - 1) / thd_num;
+  const unsigned int blk_num = (num_ + thd_num - 1) / thd_num;
   GenerateNormalKernel<<<blk_num, thd_num, 0, g_stream>>>(g_dev_states, mean, stddev, num_, dev_ptr);
   cudaStreamSynchronize(g_stream);
 }

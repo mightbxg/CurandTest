@@ -12,9 +12,9 @@ target_compile_options(rand_gen PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--generate-li
 target_compile_features(rand_gen PRIVATE cuda_std_17)
 target_link_libraries(rand_gen PRIVATE CUDA::cudart CUDA::curand)
 
-add_executable(curand_test curand_test.cpp)
-target_compile_features(curand_test PRIVATE cxx_std_17)
-target_link_libraries(curand_test PRIVATE benchmark::benchmark rand_gen)
+add_executable(test_rand_gen test_rand_gen.cpp)
+target_compile_features(test_rand_gen PRIVATE cxx_std_17)
+target_link_libraries(test_rand_gen PRIVATE rand_gen)
 
 add_executable(example1 example1.cu)
 target_compile_features(example1 PRIVATE cxx_std_17 cuda_std_17)

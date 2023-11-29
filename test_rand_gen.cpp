@@ -1,5 +1,3 @@
-#include <benchmark/benchmark.h>
-
 #include <cmath>
 #include <iostream>
 #include <vector>
@@ -31,8 +29,6 @@ static void Validate(std::size_t num, float mean, float stddev) {
   float* gpu_result = nullptr;
   cu::CudaReserveMemory(reinterpret_cast<void**>(&gpu_result), 0, num * sizeof(float));
   gen.Generate(gpu_result, mean, stddev);
-  // std::cout << "1------------------------------\n";
-  // cu::InspectValues(gpu_result, num);
   std::vector<float> result(num);
   cu::MemcpyToHost(result.data(), gpu_result, num * sizeof(float));
   CheckMeanStd(result, mean, stddev);
@@ -42,14 +38,7 @@ static void Validate(std::size_t num, float mean, float stddev) {
 }
 
 int main(int argc, char** argv) {
-  // Validate<cu::HostApiGenerator>(10000, 10.0f, 3.0f);
-  //  Validate<cu::DeviceApiGenerator>(4096, 10.0f, 3.0f);
+  Validate<cu::HostApiGenerator>(10000, 10.0f, 3.0f);
   Validate<cu::DeviceApiGenerator>(10000, 10.0f, 3.0f);
-  return 0;
-
-  benchmark::Initialize(&argc, argv);
-  if (benchmark::ReportUnrecognizedArguments(argc, argv)) return 1;
-  benchmark::RunSpecifiedBenchmarks();
-  benchmark::Shutdown();
   return 0;
 }
