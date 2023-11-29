@@ -26,8 +26,13 @@ class Generator {
 
 class HostApiGenerator : public Generator {
  public:
+  explicit HostApiGenerator(int rng_type = 142) : rng_type_(rng_type) {}
+  void SetRngType(int type) { rng_type_ = type; }
   void Setup(std::size_t num) override;
   void Generate(float* dev_ptr, float mean, float stddev) override;
+
+ private:
+  int rng_type_{100};
 };
 
 enum DeviceApiType {

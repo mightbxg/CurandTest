@@ -82,7 +82,7 @@ static curandGenerator_t g_gen;
 void HostApiGenerator::Setup(std::size_t num) {
   InitStream();
   std::random_device rd;
-  CURAND_CHECK(curandCreateGenerator(&g_gen, CURAND_RNG_PSEUDO_MT19937));
+  CURAND_CHECK(curandCreateGenerator(&g_gen, static_cast<curandRngType>(rng_type_)));
   CURAND_CHECK(curandSetStream(g_gen, g_stream));
   CURAND_CHECK(curandSetGeneratorOrdering(g_gen, CURAND_ORDERING_PSEUDO_DEFAULT));
   CURAND_CHECK(curandSetPseudoRandomGeneratorSeed(g_gen, rd()));
@@ -109,7 +109,7 @@ struct GetStateType<MRG32k3a> {
 
 template <>
 struct GetStateType<Philox4> {
-  using type = curandStatePhilox4_32_10_t;
+  using type = curandStatePhilox4_32_10;
 };
 
 template <int ApiType>
